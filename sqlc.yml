@@ -1,9 +1,11 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "internal/db/queries"
+    queries: 
+      - "internal/db/queries/users/*.sql"
+      - "internal/db/queries/auth/*.sql"
+      - "internal/db/queries/matching/*.sql"
     schema: "internal/db/migrations"
-
     gen:
       go:
         package: "db"
@@ -14,4 +16,3 @@ sql:
         emit_interface: true
         emit_exact_table_names: false
         emit_empty_slices: true
-
