@@ -67,6 +67,27 @@ CREATE TABLE "comments" (
   "created_at" timestamp DEFAULT (now())
 );
 
+CREATE TABLE user_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token text NOT NULL UNIQUE,
+  created_at timestamp DEFAULT now(),
+  expires_at timestamp NOT NULL,
+  ip_address inet,
+  user_agent text,
+  is_revoked boolean DEFAULT false
+);
+
+CREATE TABLE password_reset_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token text NOT NULL UNIQUE,
+  created_at timestamp DEFAULT now(),
+  expires_at timestamp NOT NULL,
+  used boolean DEFAULT false
+);
+
+
 CREATE UNIQUE INDEX ON "users" ("email");
 
 CREATE UNIQUE INDEX ON "profiles" ("user_id");
@@ -82,6 +103,12 @@ CREATE INDEX ON "messages" ("chat_id", "created_at");
 CREATE INDEX ON "posts" ("user_id", "created_at");
 
 CREATE INDEX ON "comments" ("post_id", "created_at");
+
+-- Optimize auth queries
+CREATE INDEX idx_session_token ON user_sessions(token_hash);
+CREATE INDEX idx_session_user ON user_sessions(user_id) WHERE NOT is_revoked;
+CREATE INDEX idx_reset_tokens ON password_reset_tokens(token_hash) WHERE NOT consumed;
+CREATE INDEX idx_login_attempts ON login_attempts(user_id, ip_address);
 
 COMMENT ON COLUMN "users"."email" IS 'Validated with regex';
 
