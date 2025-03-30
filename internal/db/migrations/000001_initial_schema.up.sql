@@ -81,7 +81,7 @@ CREATE TABLE user_sessions (
 CREATE TABLE password_reset_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token text NOT NULL UNIQUE,
+  token_hash text NOT NULL UNIQUE,
   created_at timestamp DEFAULT now(),
   expires_at timestamp NOT NULL,
   used boolean DEFAULT false

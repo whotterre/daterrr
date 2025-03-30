@@ -44,6 +44,8 @@ INSERT INTO password_reset_tokens (user_id, token, expires_at)
 VALUES ($1, $2, $3)
 RETURNING *;
 
+/*djd*/
+
 -- Validate reset token (24-hour expiry)
 -- name: GetValidPasswordResetToken :one
 SELECT * FROM password_reset_tokens
