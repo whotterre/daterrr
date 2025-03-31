@@ -4,11 +4,15 @@ import (
 	"daterrr/internal/db/sqlc"
 	"daterrr/internal/utils"
 	"daterrr/pkg/auth"
+	"daterrr/pkg/auth/tokengen"
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -32,6 +36,10 @@ type CreateNewUserParams struct {
 	Interests []string    `json:"interests"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+}
 // Registers a new user
 func (a *AuthHandler) RegisterUser(c *gin.Context) {
 	// Bind request body
@@ -42,19 +50,6 @@ func (a *AuthHandler) RegisterUser(c *gin.Context) {
 		})
 		return
 	}
-	// _, err := a.store.GetUserByEmail(c, req.Email)
-	// switch {
-	// case errors.Is(err, pgx.ErrNoRows):
-	// 	c.JSON(http.StatusConflict, gin.H{
-	// 		"error": "Email already registered. Please log in.",
-	// 	})
-	// 	return
-	// case err != nil && !errors.Is(err, pgx.ErrNoRows):
-	// 	c.JSON(http.StatusInternalServerError, gin.H{
-	// 		"error": "Could not verify email availability",
-	// 	})
-	// 	return
-	// }
 	// Hash password
 	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -91,7 +86,7 @@ func (a *AuthHandler) RegisterUser(c *gin.Context) {
 
 	subject := "Welcome to Daterrr!"
 	content := fmt.Sprintf(`
-	<h1>Welcome to Daterrr application, </h1>, %s\n
+	<h1>Welcome to Daterrr application, </h1>, %s<br/>
 	<p> Thanks for joining us. Have a nice time.</p>
 	`, req.FirstName)
 	to := []string{req.Email}
@@ -100,5 +95,55 @@ func (a *AuthHandler) RegisterUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User profile created successfully",
 		"user":    newUser,
+	})
+}
+
+
+// Add login functionality
+func (a *AuthHandler) LoginUser(c *gin.Context){
+	var req LoginRequest
+	//Check db if there is record
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message":"Something went wrong while trying to read the request body",
+			"error": err.Error(),
+		})
+		return
+	}
+
+	user, err := a.store.GetUserByEmail(c, req.Email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+            c.JSON(http.StatusNotFound, gin.H{
+                "error": "There's no user with this email here. Try signing up",
+            })
+            return
+	}}
+	// verify password 
+	if !auth.CompareHashAndPassword(user.Password, req.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid password",
+		})
+		return
+	}
+
+	//sign paseto token
+	configPath := filepath.Join("../../")
+	config, err := utils.LoadConfig(configPath)
+	tokenMaker, err := tokengen.NewPasetoMaker(config.PasetoSecret)
+	if err != nil {
+		fmt.Printf("Something went wrong in creating a new PASETO token maker: %s\n", err)
+	}
+	token, err := tokenMaker.CreateToken(user.Email, time.Hour)
+	if err != nil {
+		fmt.Printf("Something went wrong in creating a new PASETO token %s\n", err)
+	}
+
+	//return response
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+		"message": "User login successful",
+		"user": user,
+
 	})
 }

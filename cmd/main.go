@@ -5,19 +5,21 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	db "daterrr/internal/db/sqlc"
+	"daterrr/internal/utils"
+
 	"github.com/jackc/pgx/v5"
 )
 
-const (
-	dbSource   = "postgresql://postgres:password@172.17.0.2:5432/daterrr_db?sslmode=disable"
-	serverAddr = ":4000"
-)
-
 func main() {
-	// Create root context that cancels on interrupt signals
+	configPath := filepath.Join("../")
+	config, err := utils.LoadConfig(configPath)
+	if err != nil {
+		log.Fatal("Error loading config file", err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -30,7 +32,7 @@ func main() {
 	}()
 
 	// Connect to PostgreSQL using pgx
-	conn, err := pgx.Connect(ctx, dbSource)
+	conn, err := pgx.Connect(ctx, config.DBSource)
 	if err != nil {
 		log.Fatal("Couldn't connect to database:", err)
 	}
@@ -42,12 +44,12 @@ func main() {
 	}
 	log.Print("Successfully connected to the PostgreSQL database!")
 	// Create store and server
-	store := db.NewStore(conn)
+	store := db.NewStore(conn).(*db.SQLStore) 
 	server := NewServer(store)
 
 	go func() {
-		log.Println("Server starting on", serverAddr)
-		if err := server.router.Run(serverAddr); err != nil {
+		log.Println("Server starting on", config.ServerAddr)
+		if err := server.router.Run(config.ServerAddr); err != nil {
 			log.Println("Server error:", err)
 			cancel() 
 		}
