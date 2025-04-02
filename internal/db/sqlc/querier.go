@@ -37,10 +37,13 @@ type Querier interface {
 	GetUserForLogin(ctx context.Context, email string) (GetUserForLoginRow, error)
 	// Get complete user profile by ID
 	GetUserProfile(ctx context.Context, id pgtype.UUID) (GetUserProfileRow, error)
+	//djd
 	// Validate reset token (24-hour expiry)
-	GetValidPasswordResetToken(ctx context.Context, token string) (PasswordResetToken, error)
+	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	// After password update: Mark token as used
-	MarkResetTokenUsed(ctx context.Context, token string) error
+	MarkResetTokenUsed(ctx context.Context, tokenHash string) error
+	// Handle swipes
+	NewSwipe(ctx context.Context, arg NewSwipeParams) error
 	UpdateLastActive(ctx context.Context, id pgtype.UUID) error
 	UpdateProfile(ctx context.Context, arg UpdateProfileParams) (Profile, error)
 	UserExists(ctx context.Context, email string) (bool, error)
