@@ -1,10 +1,14 @@
 package tokengen
 
-import "time"
+import (
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+)
 
 // Holds the interface for Paseto
 
 type Maker interface {
-	CreateToken(email string, duration time.Duration) (string, error)
+	CreateToken(userID pgtype.UUID, duration time.Duration) (string, error)
 	VerifyToken(token string) (*Payload, error)
 }

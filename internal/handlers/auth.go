@@ -134,7 +134,7 @@ func (a *AuthHandler) LoginUser(c *gin.Context){
 	if err != nil {
 		fmt.Printf("Something went wrong in creating a new PASETO token maker: %s\n", err)
 	}
-	token, err := tokenMaker.CreateToken(user.Email, time.Hour)
+	token, err := tokenMaker.CreateToken(user.ID, time.Hour)
 	if err != nil {
 		fmt.Printf("Something went wrong in creating a new PASETO token %s\n", err)
 	}

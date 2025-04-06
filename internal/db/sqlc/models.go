@@ -33,6 +33,15 @@ type Message struct {
 	ReadAt    pgtype.Timestamp `json:"read_at"`
 }
 
+type Notification struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Type      string             `json:"type"`
+	Data      []byte             `json:"data"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Read      pgtype.Bool        `json:"read"`
+}
+
 type PasswordResetToken struct {
 	ID        pgtype.UUID      `json:"id"`
 	UserID    pgtype.UUID      `json:"user_id"`
@@ -40,19 +49,6 @@ type PasswordResetToken struct {
 	CreatedAt pgtype.Timestamp `json:"created_at"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 	Used      pgtype.Bool      `json:"used"`
-}
-
-type PotentialMatch struct {
-	ID        pgtype.UUID  `json:"id"`
-	UserID    pgtype.UUID  `json:"user_id"`
-	FirstName string       `json:"first_name"`
-	LastName  string       `json:"last_name"`
-	Bio       pgtype.Text  `json:"bio"`
-	Gender    string       `json:"gender"`
-	Age       int32        `json:"age"`
-	ImageUrl  pgtype.Text  `json:"image_url"`
-	Location  pgtype.Point `json:"location"`
-	Interests []string     `json:"interests"`
 }
 
 type Profile struct {
@@ -81,15 +77,6 @@ type User struct {
 	Password   string           `json:"password"`
 	CreatedAt  pgtype.Timestamp `json:"created_at"`
 	LastActive pgtype.Timestamp `json:"last_active"`
-}
-
-type UserMatch struct {
-	MatchID     pgtype.UUID      `json:"match_id"`
-	MatchedAt   pgtype.Timestamp `json:"matched_at"`
-	OtherUserID interface{}      `json:"other_user_id"`
-	FirstName   string           `json:"first_name"`
-	Age         int32            `json:"age"`
-	ImageUrl    pgtype.Text      `json:"image_url"`
 }
 
 type UserSession struct {

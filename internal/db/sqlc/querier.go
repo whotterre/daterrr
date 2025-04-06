@@ -11,7 +11,10 @@ import (
 )
 
 type Querier interface {
+	CheckMutualSwipe(ctx context.Context, arg CheckMutualSwipeParams) (bool, error)
+	CreateMatch(ctx context.Context, arg CreateMatchParams) (pgtype.UUID, error)
 	CreateNewUser(ctx context.Context, arg CreateNewUserParams) (CreateNewUserRow, error)
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
 	//---------------------------------------
 	// 3. PASSWORD RESET
 	//---------------------------------------
@@ -19,6 +22,7 @@ type Querier interface {
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
 	// After successful login: Create session
 	CreateSession(ctx context.Context, arg CreateSessionParams) (UserSession, error)
+	DeleteNotification(ctx context.Context, arg DeleteNotificationParams) error
 	// Logout: Delete session
 	DeleteSession(ctx context.Context, token string) error
 	// Delete user and profile with confirmation
@@ -28,6 +32,7 @@ type Querier interface {
 	//---------------------------------------
 	// Middleware: Check if token is valid
 	GetSessionByToken(ctx context.Context, token string) (GetSessionByTokenRow, error)
+	GetUnreadNotificationsCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error)
 	//---------------------------------------
@@ -35,11 +40,14 @@ type Querier interface {
 	//---------------------------------------
 	// For login page: Get user by email + password hash
 	GetUserForLogin(ctx context.Context, email string) (GetUserForLoginRow, error)
+	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	// Get complete user profile by ID
 	GetUserProfile(ctx context.Context, id pgtype.UUID) (GetUserProfileRow, error)
 	//djd
 	// Validate reset token (24-hour expiry)
 	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
+	MarkAllNotificationsAsRead(ctx context.Context, userID pgtype.UUID) error
+	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
 	// After password update: Mark token as used
 	MarkResetTokenUsed(ctx context.Context, tokenHash string) error
 	// Handle swipes

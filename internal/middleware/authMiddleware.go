@@ -21,7 +21,7 @@ func AuthMiddleware(tok tokengen.Maker) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("authorization")
 		// If no auth header was provided with the request
-		if len(authHeader) < 0 {
+		if len(authHeader) == 0 {
 			err := errors.New("No authorization header was provided")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
@@ -35,7 +35,7 @@ func AuthMiddleware(tok tokengen.Maker) gin.HandlerFunc {
 		}
 
 		authType := strings.ToLower(fields[0])
-		if authType != "Bearer" {
+		if authType != "bearer" {
 			err := fmt.Errorf("Unsupported auth type %s", authType)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
@@ -47,7 +47,7 @@ func AuthMiddleware(tok tokengen.Maker) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
-
+		
 		c.Set("userID", payload.UserID)
 		c.Next()
 
