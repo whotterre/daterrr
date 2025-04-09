@@ -12,6 +12,7 @@ import (
 	"daterrr/pkg/auth/tokengen"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 )
 
 type Server struct {
@@ -39,6 +40,8 @@ func NewServer(store *db.SQLStore) *Server {
 	swipeHandler := handlers.NewSwipeHandler(store, notifHandler)
 	router := gin.Default()
 	
+	router.Use(cors.Default())
+
 	public := router.Group("/v1")
 	{
 		public.GET("/healthcheck", handlers.HealthCheck)
