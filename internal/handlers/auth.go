@@ -24,22 +24,29 @@ func NewAuthHandler(store *db.SQLStore) *AuthHandler {
 	return &AuthHandler{store: store}
 }
 
+type LocationInput struct {
+    Latitude  float64 `json:"latitude" binding:"required"`
+    Longitude float64 `json:"longitude" binding:"required"`
+}
+
 type CreateNewUserParams struct {
-	Email     string      `json:"email"`
-	Password  string      `json:"password"`
-	FirstName string      `json:"first_name"`
-	LastName  string      `json:"last_name"`
-	Bio       pgtype.Text `json:"bio"`
-	Gender    string      `json:"gender"`
-	Age       int32       `json:"age"`
-	ImageUrl  pgtype.Text `json:"image_url"`
-	Interests []string    `json:"interests"`
+	Email     string       `json:"email"`
+	Password  string       `json:"password"`
+	FirstName string       `json:"first_name"`
+	LastName  string       `json:"last_name"`
+	Bio       pgtype.Text  `json:"bio"`
+	Gender    string       `json:"gender"`
+	Age       int32        `json:"age"`
+	ImageUrl  pgtype.Text  `json:"image_url"`
+	Location  LocationInput `json:"location"`
+	Interests []string     `json:"interests"`
 }
 
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
 }
+
 // Registers a new user
 func (a *AuthHandler) RegisterUser(c *gin.Context) {
 	// Bind request body
@@ -58,7 +65,13 @@ func (a *AuthHandler) RegisterUser(c *gin.Context) {
 		})
 		return
 	}
-
+	location := pgtype.Point{
+		 P : pgtype.Vec2{
+			X: req.Location.Latitude,
+			Y: req.Location.Longitude,
+		 },
+		 Valid: true,
+	}
 	// Create user record
 	newUser, err := a.store.CreateNewUser(c, db.CreateNewUserParams{
 		Email:     req.Email,
@@ -69,6 +82,7 @@ func (a *AuthHandler) RegisterUser(c *gin.Context) {
 		Gender:    req.Gender,
 		Age:       req.Age,
 		ImageUrl:  req.ImageUrl,
+		Location:  location,
 		Interests: req.Interests,
 	})
 	if err != nil {
@@ -98,15 +112,14 @@ func (a *AuthHandler) RegisterUser(c *gin.Context) {
 	})
 }
 
-
 // Add login functionality
-func (a *AuthHandler) LoginUser(c *gin.Context){
+func (a *AuthHandler) LoginUser(c *gin.Context) {
 	var req LoginRequest
 	//Check db if there is record
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message":"Something went wrong while trying to read the request body",
-			"error": err.Error(),
+			"message": "Something went wrong while trying to read the request body",
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -114,12 +127,13 @@ func (a *AuthHandler) LoginUser(c *gin.Context){
 	user, err := a.store.GetUserByEmail(c, req.Email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-            c.JSON(http.StatusNotFound, gin.H{
-                "error": "There's no user with this email here. Try signing up",
-            })
-            return
-	}}
-	// verify password 
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "There's no user with this email here. Try signing up",
+			})
+			return
+		}
+	}
+	// verify password
 	if !auth.CompareHashAndPassword(user.Password, req.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Invalid password",
@@ -141,9 +155,8 @@ func (a *AuthHandler) LoginUser(c *gin.Context){
 
 	//return response
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"token":   token,
 		"message": "User login successful",
-		"user": user,
-
+		"user":    user,
 	})
 }

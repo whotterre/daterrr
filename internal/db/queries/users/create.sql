@@ -4,10 +4,10 @@ WITH new_user AS (
   VALUES ($1, $2)
   RETURNING id, email, created_at
 )
-INSERT INTO profiles (user_id, first_name, last_name, bio, gender, age, image_url, interests)
+INSERT INTO profiles (user_id, first_name, last_name, bio, gender, age, image_url, location, interests)
 VALUES (
   (SELECT id FROM new_user),
-  $3, $4, $5, $6, $7, $8, $9
+  $3, $4, $5, $6, $7, $8, $9, $10
 )
 RETURNING 
   (SELECT email FROM new_user) AS email,

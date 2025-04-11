@@ -12,7 +12,9 @@ import (
 
 type Querier interface {
 	CheckMutualSwipe(ctx context.Context, arg CheckMutualSwipeParams) (bool, error)
+	CreateChat(ctx context.Context, arg CreateChatParams) (Chat, error)
 	CreateMatch(ctx context.Context, arg CreateMatchParams) (pgtype.UUID, error)
+	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
 	CreateNewUser(ctx context.Context, arg CreateNewUserParams) (CreateNewUserRow, error)
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
 	//---------------------------------------
@@ -27,6 +29,8 @@ type Querier interface {
 	DeleteSession(ctx context.Context, token string) error
 	// Delete user and profile with confirmation
 	DeleteUserWithProfile(ctx context.Context, id pgtype.UUID) (DeleteUserWithProfileRow, error)
+	GetChatByUsers(ctx context.Context, arg GetChatByUsersParams) (Chat, error)
+	GetChatMessages(ctx context.Context, chatID pgtype.UUID) ([]Message, error)
 	//---------------------------------------
 	// 2. SESSION MANAGEMENT
 	//---------------------------------------
@@ -35,6 +39,7 @@ type Querier interface {
 	GetUnreadNotificationsCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error)
+	GetUserChats(ctx context.Context, user1ID pgtype.UUID) ([]Chat, error)
 	//---------------------------------------
 	// 1. LOGIN FUNCTIONALITY
 	//---------------------------------------

@@ -17,10 +17,10 @@ WITH new_user AS (
   VALUES ($1, $2)
   RETURNING id, email, created_at
 )
-INSERT INTO profiles (user_id, first_name, last_name, bio, gender, age, image_url, interests)
+INSERT INTO profiles (user_id, first_name, last_name, bio, gender, age, image_url, location, interests)
 VALUES (
   (SELECT id FROM new_user),
-  $3, $4, $5, $6, $7, $8, $9
+  $3, $4, $5, $6, $7, $8, $9, $10
 )
 RETURNING 
   (SELECT email FROM new_user) AS email,
@@ -29,15 +29,16 @@ RETURNING
 `
 
 type CreateNewUserParams struct {
-	Email     string      `json:"email"`
-	Password  string      `json:"password"`
-	FirstName string      `json:"first_name"`
-	LastName  string      `json:"last_name"`
-	Bio       pgtype.Text `json:"bio"`
-	Gender    string      `json:"gender"`
-	Age       int32       `json:"age"`
-	ImageUrl  pgtype.Text `json:"image_url"`
-	Interests []string    `json:"interests"`
+	Email     string       `json:"email"`
+	Password  string       `json:"password"`
+	FirstName string       `json:"first_name"`
+	LastName  string       `json:"last_name"`
+	Bio       pgtype.Text  `json:"bio"`
+	Gender    string       `json:"gender"`
+	Age       int32        `json:"age"`
+	ImageUrl  pgtype.Text  `json:"image_url"`
+	Location  pgtype.Point `json:"location"`
+	Interests []string     `json:"interests"`
 }
 
 type CreateNewUserRow struct {
@@ -65,6 +66,7 @@ func (q *Queries) CreateNewUser(ctx context.Context, arg CreateNewUserParams) (C
 		arg.Gender,
 		arg.Age,
 		arg.ImageUrl,
+		arg.Location,
 		arg.Interests,
 	)
 	var i CreateNewUserRow
