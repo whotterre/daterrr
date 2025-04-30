@@ -26,3 +26,28 @@ INSERT INTO chats (user1_id, user2_id)
 SELECT user1_id, user2_id FROM new_match
 ON CONFLICT (user1_id, user2_id) DO NOTHING
 RETURNING (SELECT id FROM new_match);
+
+-- name: GenerateFeed :many
+SELECT 
+  u.id,
+  u.email,
+  u.created_at,
+  u.last_active,
+  p.first_name,
+  p.last_name,
+  p.bio,
+  p.gender,
+  p.age,
+  p.image_url,
+  p.interests,
+  p.location
+FROM users u
+JOIN profiles p ON u.id = p.user_id
+WHERE u.id != $1
+LIMIT 10;
+
+
+-- name: FindExistingMatch :one
+SELECT id FROM matches 
+WHERE user1_id = $1 AND user2_id = $2
+LIMIT 1;

@@ -29,6 +29,8 @@ type Querier interface {
 	DeleteSession(ctx context.Context, token string) error
 	// Delete user and profile with confirmation
 	DeleteUserWithProfile(ctx context.Context, id pgtype.UUID) (DeleteUserWithProfileRow, error)
+	FindExistingMatch(ctx context.Context, arg FindExistingMatchParams) (pgtype.UUID, error)
+	GenerateFeed(ctx context.Context, id pgtype.UUID) ([]GenerateFeedRow, error)
 	GetChatByUsers(ctx context.Context, arg GetChatByUsersParams) (Chat, error)
 	GetChatMessages(ctx context.Context, chatID pgtype.UUID) ([]Message, error)
 	//---------------------------------------

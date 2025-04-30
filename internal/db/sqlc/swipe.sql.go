@@ -60,6 +60,92 @@ func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (pgtyp
 	return id, err
 }
 
+const findExistingMatch = `-- name: FindExistingMatch :one
+SELECT id FROM matches 
+WHERE user1_id = $1 AND user2_id = $2
+LIMIT 1
+`
+
+type FindExistingMatchParams struct {
+	User1ID pgtype.UUID `json:"user1_id"`
+	User2ID pgtype.UUID `json:"user2_id"`
+}
+
+func (q *Queries) FindExistingMatch(ctx context.Context, arg FindExistingMatchParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, findExistingMatch, arg.User1ID, arg.User2ID)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const generateFeed = `-- name: GenerateFeed :many
+SELECT 
+  u.id,
+  u.email,
+  u.created_at,
+  u.last_active,
+  p.first_name,
+  p.last_name,
+  p.bio,
+  p.gender,
+  p.age,
+  p.image_url,
+  p.interests,
+  p.location
+FROM users u
+JOIN profiles p ON u.id = p.user_id
+WHERE u.id != $1
+LIMIT 10
+`
+
+type GenerateFeedRow struct {
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	LastActive pgtype.Timestamp `json:"last_active"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Bio        pgtype.Text      `json:"bio"`
+	Gender     string           `json:"gender"`
+	Age        int32            `json:"age"`
+	ImageUrl   pgtype.Text      `json:"image_url"`
+	Interests  []string         `json:"interests"`
+	Location   pgtype.Point     `json:"location"`
+}
+
+func (q *Queries) GenerateFeed(ctx context.Context, id pgtype.UUID) ([]GenerateFeedRow, error) {
+	rows, err := q.db.Query(ctx, generateFeed, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GenerateFeedRow{}
+	for rows.Next() {
+		var i GenerateFeedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.CreatedAt,
+			&i.LastActive,
+			&i.FirstName,
+			&i.LastName,
+			&i.Bio,
+			&i.Gender,
+			&i.Age,
+			&i.ImageUrl,
+			&i.Interests,
+			&i.Location,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const newSwipe = `-- name: NewSwipe :exec
 INSERT INTO swipes (swiper_id, swipee_id) VALUES(
     $1, $2 -- Swiper ID and Swipee ID

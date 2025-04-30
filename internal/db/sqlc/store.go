@@ -2,56 +2,80 @@ package db
 
 import (
 	"context"
-	"daterrr/pkg/auth/tokengen"
 	"github.com/jackc/pgx/v5"
-	"time"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// TxQuerier represents a transaction with all query methods.
+type TxQuerier interface {
+	Querier
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
+}
+
+// Store interface embeds the generated sqlc Querier and adds transaction methods
 type Store interface {
 	Querier
 	ExecTx(ctx context.Context, fn func(Querier) error) error
-	Conn() *pgx.Conn
+	BeginTx(ctx context.Context) (TxQuerier, error)
 }
 
+// SQLStore holds a connection pool and implements Store
 type SQLStore struct {
-	conn *pgx.Conn
+	pool    *pgxpool.Pool
 	*Queries
 }
 
-// CreateToken implements tokengen.Maker.
-func (s *SQLStore) CreateToken(email string, duration time.Duration) (string, error) {
-	panic("unimplemented")
+// txQuerier implements TxQuerier
+type txQuerier struct {
+	*Queries
+	tx pgx.Tx
 }
 
-// VerifyToken implements tokengen.Maker.
-func (s *SQLStore) VerifyToken(token string) (*tokengen.Payload, error) {
-	panic("unimplemented")
+func (t *txQuerier) Commit(ctx context.Context) error {
+	return t.tx.Commit(ctx)
 }
 
-func NewStore(conn *pgx.Conn) Store {
+func (t *txQuerier) Rollback(ctx context.Context) error {
+	return t.tx.Rollback(ctx)
+}
+
+// NewStore creates a new store using a pgxpool.Pool
+func NewStore(pool *pgxpool.Pool) Store {
+	var dbi DBTX = pool
 	return &SQLStore{
-		conn:    conn,
-		Queries: New(conn),
+		pool:    pool,
+		Queries: New(dbi),
 	}
 }
 
-func (s *SQLStore) Conn() *pgx.Conn {
-	return s.conn
+// BeginTx starts a new transaction and returns a TxQuerier
+func (s *SQLStore) BeginTx(ctx context.Context) (TxQuerier, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	
+	queries := New(tx)
+	return &txQuerier{
+		Queries: queries,
+		tx:      tx,
+	}, nil
 }
 
+// ExecTx executes a function within a database transaction
 func (s *SQLStore) ExecTx(ctx context.Context, fn func(Querier) error) error {
-	tx, err := s.conn.Begin(ctx)
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx) // Rollback is safe even if Commit succeeds
 
-	q := New(tx)
+	q := New(tx) // Wrap tx with sqlc Queries
+
 	err = fn(q)
 	if err != nil {
-		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			return rbErr
-		}
-		return err
+		return err // Rollback will trigger due to defer
 	}
 
 	return tx.Commit(ctx)
