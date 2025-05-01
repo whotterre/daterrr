@@ -34,7 +34,7 @@ func (q *Queries) CheckMutualSwipe(ctx context.Context, arg CheckMutualSwipePara
 
 const createMatch = `-- name: CreateMatch :one
 WITH new_match AS (
-  INSERT INTO matches (user1_id, user2_id)
+  INSERT INTO matches (user1_id, user2_id) --swipee_id, swipee_id
   VALUES (
     LEAST($1::uuid, $2::uuid),
     GREATEST($1::uuid, $2::uuid)

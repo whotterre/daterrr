@@ -145,8 +145,8 @@ func (s *SwipeHandler) HandleSwipe(c *gin.Context) {
         
         // Check for mutual swipes
         mutual, err := q.CheckMutualSwipe(c, db.CheckMutualSwipeParams{
-            SwiperID: UUIDToPgType(swipeeUUID),  
-            SwipeeID: UUIDToPgType(swiperUUID),
+            SwiperID: UUIDToPgType(swiperUUID),  
+            SwipeeID: UUIDToPgType(swipeeUUID),
         })
         if err != nil {
             log.Printf("Failed to check mutual swipe: %v", err)
