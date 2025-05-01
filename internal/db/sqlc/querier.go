@@ -47,6 +47,7 @@ type Querier interface {
 	//---------------------------------------
 	// For login page: Get user by email + password hash
 	GetUserForLogin(ctx context.Context, email string) (GetUserForLoginRow, error)
+	GetUserMatches(ctx context.Context, user1ID pgtype.UUID) ([]GetUserMatchesRow, error)
 	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	// Get complete user profile by ID
 	GetUserProfile(ctx context.Context, id pgtype.UUID) (GetUserProfileRow, error)

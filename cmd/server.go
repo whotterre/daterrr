@@ -23,6 +23,7 @@ type Server struct {
 }
 
 func NewServer(store *db.SQLStore) *Server {
+	gin.SetMode(gin.DebugMode)
 	config, err := utils.LoadConfig("../")
 	if err != nil {
 		fmt.Printf("Error loading config %s", err)
@@ -38,16 +39,23 @@ func NewServer(store *db.SQLStore) *Server {
 	authHandler := handlers.NewAuthHandler(store)
 	notifHandler := handlers.NewNotificationHandler(store)
 	swipeHandler := handlers.NewSwipeHandler(store, notifHandler)
+	matchHandler := handlers.NewMatchHandler(store)
 	router := gin.Default()
 	
-	router.Use(cors.Default())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	public := router.Group("/v1")
 	{
 		public.GET("/healthcheck", handlers.HealthCheck)
 		public.POST("/user/register", authHandler.RegisterUser)
 		public.POST("/user/login", authHandler.LoginUser)
-	}
+  }
 
 	// Protected routes (require authentication)
 	protected := router.Group("/v1")
@@ -57,7 +65,9 @@ func NewServer(store *db.SQLStore) *Server {
 	}
 	protected.Use(middleware.AuthMiddleware(tMaker))
 	{
+		protected.GET("/genswipefeed", swipeHandler.CreateFeed)
 		protected.POST("/swipes", swipeHandler.HandleSwipe)
+		protected.GET("/user/getmatches", matchHandler.ListMatches)
 		protected.GET("/notifications/ws", notifHandler.HandleWebSocket)
 	}
 
