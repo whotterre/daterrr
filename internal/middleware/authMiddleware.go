@@ -19,8 +19,7 @@ func errorResponse(err error) gin.H {
 /* Middleware for handling authentication of request (pretty obvi innit?) */
 func AuthMiddleware(tok tokengen.Maker) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("authorization")
-		// If no auth header was provided with the request
+		authHeader := c.GetHeader("authorization")  
 		if len(authHeader) == 0 {
 			err := errors.New("No authorization header was provided")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))

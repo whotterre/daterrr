@@ -11,8 +11,8 @@ import (
 	"daterrr/internal/utils"
 	"daterrr/pkg/auth/tokengen"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -40,8 +40,13 @@ func NewServer(store *db.SQLStore) *Server {
 	notifHandler := handlers.NewNotificationHandler(store)
 	swipeHandler := handlers.NewSwipeHandler(store, notifHandler)
 	matchHandler := handlers.NewMatchHandler(store)
+	chatHandler := handlers.NewChatHandler(store)
+	profileHandler := handlers.NewProfileHandler(store)
 	router := gin.Default()
-	
+
+	tMaker, err := tokengen.NewPasetoMaker(config.PasetoSecret)
+
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -55,11 +60,12 @@ func NewServer(store *db.SQLStore) *Server {
 		public.GET("/healthcheck", handlers.HealthCheck)
 		public.POST("/user/register", authHandler.RegisterUser)
 		public.POST("/user/login", authHandler.LoginUser)
-  }
+		public.GET("/chat/ws", func(c *gin.Context) {
+			handlers.HandleWebSocket(c, store)
+		})
 
 	// Protected routes (require authentication)
 	protected := router.Group("/v1")
-	tMaker, err := tokengen.NewPasetoMaker(config.PasetoSecret)
 	if err != nil {
 		fmt.Printf("Error loading config %s", err)
 	}
@@ -69,8 +75,12 @@ func NewServer(store *db.SQLStore) *Server {
 		protected.POST("/swipes", swipeHandler.HandleSwipe)
 		protected.GET("/user/getmatches", matchHandler.ListMatches)
 		protected.GET("/notifications/ws", notifHandler.HandleWebSocket)
+		protected.GET("/getmessages/:id", chatHandler.GetChatMessages)
+		protected.POST("/sendmessage/:receiverId", chatHandler.CreateMessage)
+		protected.GET("/user/getprofile", profileHandler.GetUserProfile)
+		
 	}
 
 	server.router = router
 	return server
-}
+}}
