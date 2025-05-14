@@ -23,6 +23,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+
 type NotificationHandler struct {
 	store       *db.SQLStore
 	connections map[string]*websocket.Conn
@@ -44,6 +45,7 @@ type MatchNotification struct {
 	ImageURL  string      `json:"imageUrl"`
 	Timestamp int64       `json:"timestamp"`
 }
+
 
 func (h *NotificationHandler) HandleWebSocket(c *gin.Context) {
 	userID := c.MustGet("userID").(string)

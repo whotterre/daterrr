@@ -7,6 +7,7 @@ import (
 
 	db "daterrr/internal/db/sqlc"
 	"daterrr/internal/utils"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -90,7 +91,8 @@ func (h *ChatHandler) GetChatMessages(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
 		return
 	}
-
+	h.logger.Print("UUID cast", chatUUID)
+	h.logger.Print("PgType UUID", utils.UUIDToPgType(chatUUID))
 	messages, err := h.store.GetChatMessages(c, utils.UUIDToPgType(chatUUID))
 	if err != nil {
 		h.logger.Printf("Failed to get messages: %v", err)

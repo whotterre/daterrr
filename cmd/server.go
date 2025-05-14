@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Server struct {
@@ -22,7 +23,7 @@ type Server struct {
 	infoLog  *log.Logger
 }
 
-func NewServer(store *db.SQLStore) *Server {
+func NewServer(store *db.SQLStore, pool *pgxpool.Pool) *Server {
 	gin.SetMode(gin.DebugMode)
 	config, err := utils.LoadConfig("../")
 	if err != nil {
@@ -57,7 +58,9 @@ func NewServer(store *db.SQLStore) *Server {
 
 	public := router.Group("/v1")
 	{
-		public.GET("/healthcheck", handlers.HealthCheck)
+		public.GET("/healthz", func(c *gin.Context) {
+			handlers.HealthCheck(c, pool)
+		})
 		public.POST("/user/register", authHandler.RegisterUser)
 		public.POST("/user/login", authHandler.LoginUser)
 		public.GET("/chat/ws", func(c *gin.Context) {
@@ -77,7 +80,7 @@ func NewServer(store *db.SQLStore) *Server {
 		protected.GET("/notifications/ws", notifHandler.HandleWebSocket)
 		protected.POST("/sendmessage/:receiverId", chatHandler.CreateMessage)
 		protected.GET("/user/getprofile", profileHandler.GetUserProfile)
-		protected.GET("/user/chats", chatHandler.GetUserChatsWithChatID)
+		protected.GET("/user/chats/:chatId", chatHandler.GetChatMessages)
 		protected.GET("/user/getconversations", chatHandler.GetConversations)
 	}
 

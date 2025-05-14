@@ -60,7 +60,7 @@ func main() {
 	store := db.NewStore(pool).(*db.SQLStore) // Pass the POOL
 	
 
-	server := NewServer(store)
+	server := NewServer(store, pool)
 
 	go func() {
 		log.Println("Server starting on", config.ServerAddr)

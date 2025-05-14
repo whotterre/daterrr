@@ -5,7 +5,6 @@ import (
 	"daterrr/internal/models"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -189,7 +188,6 @@ func broadcastMessage(c *gin.Context, room *models.ChatRoom, senderID string, ms
 	}
 	// Convert room ID to UUID
 	fmt.Println("[INFO] Room ID:", room.ID)
-	log.Print(room.ID)
 	roomUUID, err := uuid.Parse(room.ID)
 	if err != nil {
 		fmt.Println("[ERROR] Invalid room ID:", room.ID, err)
