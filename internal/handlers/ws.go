@@ -5,11 +5,12 @@ import (
 	"daterrr/internal/models"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	// "github.com/google/uuid"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -85,19 +86,21 @@ func HandleWebSocket(c *gin.Context, store *db.SQLStore) {
 	welcomeMsg := map[string]string{
 		"sender":  "Server",
 		"message": fmt.Sprintf("You are now connected to your match chat"),
+		"type": "message",
+		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	}
 	jsonMsg, _ := json.Marshal(welcomeMsg)
 	conn.WriteMessage(websocket.TextMessage, jsonMsg)
 
 	// Notify the other user in the room (if present)
-	if len(room.Users) > 1 {
+	if len(room.Users) == 2 {
 		for _, u := range room.Users {
 			if u.UserID != userID {
 				notification := map[string]string{
 					"sender":  "Server",
 					"message": "Your match has joined the chat",
 					"type":    "message",
-					
+					"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 				}
 				jsonNotif, _ := json.Marshal(notification)
 				u.Conn.WriteMessage(websocket.TextMessage, jsonNotif)
@@ -176,30 +179,32 @@ func broadcastMessage(c *gin.Context, room *models.ChatRoom, senderID string, ms
 		"type":    "message",
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	}
-	// /* Persist the messages */
+	/* Persist the messages */
 
-	// // Convert senderID to UUID
-	// senderUUID, err := uuid.Parse(senderID)
-	// if err != nil {
-	// 	fmt.Println("[ERROR] Invalid sender ID:", senderID, err)
-	// 	return
-	// }
-	// // Convert room ID to UUID
-	// roomUUID, err := uuid.Parse(room.ID)
-	// if err != nil {
-	// 	fmt.Println("[ERROR] Invalid room ID:", room.ID, err)
-	// 	return
-	// }
-	// // Store the message in the database
-	// message, err := store.CreateMessage(c, db.CreateMessageParams{
-	// 	ChatID:   UUIDToPgType(roomUUID),
-	// 	SenderID: UUIDToPgType(senderUUID),
-	// 	Content:  parsedMsg.Content,
-	// })
-	// if err != nil {
-	// 	fmt.Println("[ERROR] Failed to store message in database:", message, err)
-	// 	return
-	// }
+	// Convert senderID to UUID
+	senderUUID, err := uuid.Parse(senderID)
+	if err != nil {
+		fmt.Println("[ERROR] Invalid sender ID:", senderID, err)
+		return
+	}
+	// Convert room ID to UUID
+	fmt.Println("[INFO] Room ID:", room.ID)
+	log.Print(room.ID)
+	roomUUID, err := uuid.Parse(room.ID)
+	if err != nil {
+		fmt.Println("[ERROR] Invalid room ID:", room.ID, err)
+		return
+	}
+	// Store the message in the database
+	message, err := store.CreateMessage(c, db.CreateMessageParams{
+		ChatID:   UUIDToPgType(roomUUID),
+		SenderID: UUIDToPgType(senderUUID),
+		Content:  parsedMsg.Content,
+	})
+	if err != nil {
+		fmt.Println("[ERROR] Failed to store message in database:", message, err)
+		return
+	}
 
 	jsonMsg, _ := json.Marshal(messageData)
 

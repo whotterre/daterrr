@@ -75,10 +75,10 @@ func NewServer(store *db.SQLStore) *Server {
 		protected.POST("/swipes", swipeHandler.HandleSwipe)
 		protected.GET("/user/getmatches", matchHandler.ListMatches)
 		protected.GET("/notifications/ws", notifHandler.HandleWebSocket)
-		protected.GET("/getmessages/:id", chatHandler.GetChatMessages)
 		protected.POST("/sendmessage/:receiverId", chatHandler.CreateMessage)
 		protected.GET("/user/getprofile", profileHandler.GetUserProfile)
-		
+		protected.GET("/user/chats", chatHandler.GetUserChatsWithChatID)
+		protected.GET("/user/getconversations", chatHandler.GetConversations)
 	}
 
 	server.router = router
